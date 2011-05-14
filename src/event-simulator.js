@@ -1,6 +1,6 @@
 /*
 ---
-    Port from the YUI3 event-simulate functionality to vanilla javascript.
+    Port from the YUI3 event-simulate functionality on vanilla javascript.
 ...
 */
 (function(global, document){
@@ -20,17 +20,17 @@
         mousedown:  1,
         mouseup:    1,
         mousemove:  1
-    },
+    };
 
     //key events supported
-    keyEvents   = {
+    var keyEvents   = {
         keydown:    1,
         keyup:      1,
         keypress:   1
-    },
+    };
 
     //events that bubble by default
-    bubbleEvents = {
+    var bubbleEvents = {
         scroll:     1,
         resize:     1,
         reset:      1,
@@ -45,7 +45,7 @@
     mix(bubbleEvents, mouseEvents);
     mix(bubbleEvents, keyEvents);
 
-    function simulateKeyEvent(
+    var simulateKeyEvent = function(
         target,
         type,
         bubbles,
@@ -61,22 +61,23 @@
         type = type.toLowerCase();
 
         //setup default values
-        if(bubbles !== false) bubbles = true;
-        if(cancelable !== false) cancelable = true; //all key events can be cancelled
+        if (bubbles !== false) bubbles = true;
+        if (cancelable !== false) cancelable = true; //all key events can be cancelled
         view = view || window; //view is typically window
-        if(ctrlKey !== true) ctrlKey = false;
-        if(altKey !== true) altKey = false;
-        if(shiftKey !== true) shiftKey = false;
-        if(metaKey !== true) metaKey = false;
+        if (ctrlKey !== true) ctrlKey = false;
+        if (altKey !== true) altKey = false;
+        if (shiftKey !== true) shiftKey = false;
+        if (metaKey !== true) metaKey = false;
         keyCode = keyCode || 0;
         charCode = charCode || 0;
 
         //try to create a mouse event
-        var customEvent = null;
+        var customEvent,
+            eventWorked;
 
         //check for DOM-compliant browsers first
-        if('createEvent' in document){
-            try{
+        if ('createEvent' in document){
+            try {
                 //try to create key event
                 customEvent = document.createEvent('KeyEvents');
                 customEvent.initKeyEvent(
@@ -92,34 +93,22 @@
                     charCode
                 );
             } catch (ex) {
-                var keyboardEvents = ['KeyboardEvent', 'Event', 'UIEvents'];
-                for (var i = 0; i < keyboardEvents.length; i++){
-                    try {
-                        customEvent = document.createEvent(keyboardEvents[i]);
-                        break;
-                    } catch(e){};
+                try {
+                    customEvent = document.createEvent('Events');
+                } catch(ex) {
+                    customEvent = document.createEvent('UIEvents');
+                } finally {
+                    customEvent.initEvent(type, bubbles, cancelable);
+                    customEvent.view = view;
+                    customEvent.altKey = altKey;
+                    customEvent.ctrlKey = ctrlKey;
+                    customEvent.shiftKey = shiftKey;
+                    customEvent.metaKey = metaKey;
+                    customEvent.keyCode = keyCode;
+                    customEvent.charCode = charCode;
                 }
-                customEvent['init'+ keyboardEvents[i]](
-                    type,
-                    bubbles,
-                    cancelable,
-                    view,
-                    ctrlKey,
-                    altKey,
-                    shiftKey,
-                    metaKey,
-                    keyCode,
-                    charCode
-                );
-                //customEvent.view = view;
-                //customEvent.altKey = altKey;
-                //customEvent.ctrlKey = ctrlKey;
-                //customEvent.shiftKey = shiftKey;
-                //customEvent.metaKey = metaKey;
-                //customEvent.keyCode = keyCode;
-                //customEvent.charCode = charCode;
             }
-            target.dispatchEvent(customEvent);
+            eventWorked = target.dispatchEvent(customEvent);
         } else if ('createEventObject' in document){
             customEvent = document.createEventObject();
             customEvent.bubbles = bubbles;
@@ -135,11 +124,12 @@
              * representation.
              */
             customEvent.keyCode = (charCode > 0) ? charCode : keyCode;
-            target.fireEvent('on' + type, customEvent);
+            eventWorked = target.fireEvent('on' + type, customEvent);
         }
-    }
+        return eventWorked;
+    };
 
-    function simulateMouseEvent(
+    var simulateMouseEvent = function(
         target,
         type,
         bubbles,
@@ -193,7 +183,8 @@
         relatedTarget = relatedTarget || null;
 
         //try to create a mouse event
-        var customEvent /*:MouseEvent*/ = null;
+        var customEvent,
+            eventWorked;
 
         //check for DOM-compliant browsers first
         if ('createEvent' in document){
@@ -243,7 +234,7 @@
             }
 
             //fire the event
-            target.dispatchEvent(customEvent);
+            eventWorked = target.dispatchEvent(customEvent);
 
         } else if ('createEventObject' in document){ //IE
 
@@ -287,18 +278,21 @@
             customEvent.relatedTarget = relatedTarget;
 
             //fire the event
-            target.fireEvent("on" + type, customEvent);
+            eventWorked = target.fireEvent("on" + type, customEvent);
 
         } else {
             new Error("simulateMouseEvent(): No event simulation framework present.");
         }
-    }
+
+        return eventWorked;
+    };
 
     global.simulateEvent = function(target, type, options){
         options = options || {};
         type = type.toLowerCase();
+
         if (keyEvents[type]){
-            simulateKeyEvent(
+            return simulateKeyEvent(
                 target,
                 type,
                 options.bubbles,
@@ -311,26 +305,26 @@
                 options.keyCode,
                 options.charCode
             );
-        } else {
-            simulateMouseEvent(
-                target,
-                type,
-                options.bubbles,
-                options.cancelable,
-                options.view,
-                options.detail,
-                options.screenX,
-                options.screenY,
-                options.clientX,
-                options.clientY,
-                options.ctrlKey,
-                options.altKey,
-                options.shiftKey,
-                options.metaKey,
-                options.button,
-                options.relatedTarget
-            );
         }
+
+        return simulateMouseEvent(
+            target,
+            type,
+            options.bubbles,
+            options.cancelable,
+            options.view,
+            options.detail,
+            options.screenX,
+            options.screenY,
+            options.clientX,
+            options.clientY,
+            options.ctrlKey,
+            options.altKey,
+            options.shiftKey,
+            options.metaKey,
+            options.button,
+            options.relatedTarget
+        );
     };
 
 })(this, document);

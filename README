@@ -1,0 +1,12 @@
+# Crick - real event simulator
+
+Crick is a browser event simulator, that really fires the event from the browser.
+
+It currently only works on firefox.
+
+All mouse and keyboard events are supported right now.
+Events like "submit" should work too but are still not tested.
+
+## how to use
+
+Check the tests to see how to use it.

@@ -1,6 +1,6 @@
 if (!Element.prototype.addEventListener){
-    Element.prototype.addEventListener = function(type, fn){
-        this.attachEvent('on' + type, fn);
+    Element.prototype.addEventListener = function(type, fn, capture){
+        this.attachEvent('on' + type, fn, capture);
     };
 }
 
